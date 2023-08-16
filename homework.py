@@ -47,11 +47,12 @@ def check_tokens():
 
 
 class TelegramError(Exception):
+    """Ошибка при отправке сообщения."""
     pass
 
 
 def send_message(bot, message):
-    '''Отправка сообщения пользователю.'''
+    """Отправка сообщения пользователю."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.debug('Сообщение успешно отправлено')
@@ -108,7 +109,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    '''Распаковка статуса из полученного ответа.'''
+    """Распаковка статуса из полученного ответа."""
     try:
         homework_name = homework['homework_name']
     except KeyError:
@@ -123,7 +124,6 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-
     check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = 1549962000
