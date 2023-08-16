@@ -48,6 +48,7 @@ def check_tokens():
 
 class TelegramError(Exception):
     """Ошибка при отправке сообщения."""
+
     pass
 
 
