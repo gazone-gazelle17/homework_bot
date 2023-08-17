@@ -7,14 +7,9 @@ import requests
 import telegram
 
 from dotenv import load_dotenv
+from http import HTTPStatus
 
 load_dotenv()
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename='my_bot.log',
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
@@ -62,10 +57,15 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Получение ответа от API."""
     try:
+        logging.debug(
+            f'Отправляем запрос на адрес {ENDPOINT};'
+            f'Передаем заголовки с параметром {HEADERS};'
+            f'В качестве временной метки принимаем {timestamp};'
+        )
         response = requests.get(
             ENDPOINT, headers=HEADERS, params={'from_date': timestamp})
         response.raise_for_status()
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             logging.error(
                 f'Получен ответ с кодом состояния: {response.status_code}')
             raise requests.RequestException(
@@ -81,17 +81,15 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Проверка ответа от API на соответствие документации."""
     if 'homeworks' not in response:
-        logging.error('Домашняя работа отсутствует в объекте ответа')
         raise TypeError('Домашняя работа отсутствует в объекте ответа')
-    if type(response) != dict:
+    if not isinstance(response, dict):
         raise TypeError(
             'Структура полученных данных не соответствует ожидаемой')
-    if type(response['homeworks']) != list:
+    if not isinstance(response['homeworks'], list):
         raise TypeError(
             'Структура полученных данных не соответствует ожидаемой')
     for homework in response['homeworks']:
         if 'status' not in homework:
-            logging.error('В ответе API отсутствуют данные о проверке работы')
             raise TypeError(
                 'В ответе API отсутствуют данные о проверке работы')
     verdict_keys = HOMEWORK_VERDICTS.keys()
@@ -139,11 +137,16 @@ def main():
                 send_message(bot, message)
 
         except Exception as error:
-            message = f'Сбой в работе программы: {error}'
             logging.error(f'Сбой при отправке сообщения - {error}')
-        time.sleep(RETRY_PERIOD)
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
     """Код, исполняемый только в случае непосредственного запуска."""
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename='my_bot.log',
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
     main()
