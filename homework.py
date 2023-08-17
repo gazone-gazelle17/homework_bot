@@ -1,10 +1,10 @@
 import logging
 import os
+import time
 
 import requests
 
 import telegram
-import time
 
 from dotenv import load_dotenv
 
@@ -35,14 +35,11 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """Проверка доступности переменных окружения."""
-    if not PRACTICUM_TOKEN:
-        logging.critical('Не найдена переменная PRACTICUM_TOKEN')
+    if PRACTICUM_TOKEN is None:
         raise ValueError('Не найдена переменная PRACTICUM_TOKEN')
-    if not TELEGRAM_TOKEN:
-        logging.critical('Не найдена переменная TELEGRAM_TOKEN')
+    if TELEGRAM_TOKEN is None:
         raise ValueError('Не найдена переменная TELEGRAM_TOKEN')
-    if not TELEGRAM_CHAT_ID:
-        logging.critical('Не найдена переменная TELEGRAM_CHAT_ID')
+    if TELEGRAM_CHAT_ID is None:
         raise ValueError('Не найдена переменная TELEGRAM_CHAT_ID')
 
 
@@ -55,6 +52,7 @@ class TelegramError(Exception):
 def send_message(bot, message):
     """Отправка сообщения пользователю."""
     try:
+        logging.debug('Попытка отправить сообщение.')
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.debug('Сообщение успешно отправлено')
     except TelegramError as error:
@@ -75,10 +73,9 @@ def get_api_answer(timestamp):
     except requests.RequestException:
         logging.error(
             f'Получен ответ с кодом состояния: {response.status_code}')
-        raise requests.RequestException(
+        raise TelegramError(
             'Получен статус ответа, отличный от 200')
-    response = response.json()
-    return response
+    return response.json()
 
 
 def check_response(response):
@@ -125,9 +122,13 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = 1549962000
+    try:
+        check_tokens()
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        timestamp = time.time()
+    except ValueError:
+        logging.critical('Отсутствуют переменные окружения.')
+        raise ValueError('Отсутствуют переменные окружения.')
 
     while True:
         try:
